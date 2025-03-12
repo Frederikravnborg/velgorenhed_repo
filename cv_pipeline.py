@@ -3,6 +3,9 @@ import easyocr
 import time
 import requests
 import numpy as np
+import gspread
+from google.oauth2.service_account import Credentials
+import datetime
 
 # ----------------- Configuration -----------------
 CAMERA_INDEX = 0  # Default to built-in webcam
@@ -15,13 +18,25 @@ FPS = 15
 DEBOUNCE_SECONDS = 30
 
 # Predefined valid race numbers (update with your actual list)
-VALID_RACE_NUMBERS = {"101", "102", "103", "104", "105"}
+VALID_RACE_NUMBERS = {"101", "102", "103", "104", "105", "106", "107", "108", "109", "110"}
 
 # Dashboard endpoint (make sure the dashboard is running on this URL)
 DASHBOARD_UPDATE_URL = "http://localhost:5003/update"
 
+# ----------------- Google Sheets Configuration -----------------
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/drive']
+# Update the path to your service account credentials file.
+CREDENTIALS_FILE = 'velgoerenhedsloeb-7c4668dfdb74.json'
+creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+client = gspread.authorize(creds)
+
+# Replace with your actual Google Sheet ID from the sheet URL.
+SHEET_ID = '1loQS4_aPTvNxwDkRs01sG8usJxsh4OeK2nAgI2uvwqU'
+# We'll use the first sheet for both the scoreboard (top) and log (bottom).
+sheet = client.open_by_key(SHEET_ID).sheet1
+
 # ----------------- Global State -----------------
-# Initialize lap counts and record of last detection times for debounce
 lap_counts = {num: 0 for num in VALID_RACE_NUMBERS}
 last_detection_time = {num: 0 for num in VALID_RACE_NUMBERS}
 
@@ -30,65 +45,121 @@ last_detection_time = {num: 0 for num in VALID_RACE_NUMBERS}
 reader = easyocr.Reader(['en'], gpu=True)
 
 # ----------------- Functions -----------------
+def load_existing_data_from_sheet(sheet):
+    """
+    Reads the current scoreboard from the Sheet (A/B columns)
+    and populates the lap_counts dictionary so we can keep
+    a running total between script runs.
+    
+    Assumes the sheet has a header in row 1 with:
+        A1: "Race Number"
+        B1: "Lap Count"
+    and subsequent rows contain existing race numbers and counts.
+    """
+    global lap_counts
+    existing_data = sheet.get_all_values()  # list of lists (rows)
+    # Skip header row (index 0) and parse each subsequent row
+    for row in existing_data[1:]:
+        if len(row) < 2:
+            continue
+        race_number, lap_str = row[0], row[1]
+        if race_number in lap_counts:
+            try:
+                lap_counts[race_number] = int(lap_str)
+            except ValueError:
+                # If the stored value isn't a valid integer, ignore or log
+                pass
+
 def send_update_to_dashboard(lap_counts):
     """
     Sends the current lap count data to the dashboard via a POST request.
     """
     try:
-        response = requests.post(DASHBOARD_UPDATE_URL, json=lap_counts)
+        requests.post(DASHBOARD_UPDATE_URL, json=lap_counts)
         # Optionally, check response.status_code or response.json() for confirmation
     except Exception as e:
         print("Error sending update to dashboard:", e)
+
+def append_log_entry(runner_id, lap_count):
+    """
+    Appends a new log entry at the bottom of the sheet with:
+    A) Existing entries
+    B) New log entry
+    C) Timestamp of detection
+    """
+    # Calculate main table rows (including header)
+    main_table_rows = len(lap_counts) + 1
+    log_header_row = main_table_rows + 6
+    # Get existing log entries in column A from row (log_header_row+1) onward
+    log_entries = sheet.col_values(1)[log_header_row:]
+    next_row = log_header_row + len(log_entries) + 1
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Update log entry in columns A-C of calculated next row
+    sheet.update(f'A{next_row}:C{next_row}', [[runner_id, lap_count, timestamp]])
+
+def update_google_sheet(lap_counts):
+    data = [['Race Number', 'Lap Count']]
+    # Sort race numbers numerically before appending rows
+    for number in sorted(lap_counts.keys(), key=int):
+        data.append([number, lap_counts[number]])
+    
+    update_range = f'A1:B{len(data)}'
+    try:
+        sheet.update(update_range, data)
+        # Calculate row for log header: 5 empty rows below main table
+        log_header_row = len(data) + 6
+        sheet.update_cell(log_header_row, 1, "Log of all entries")
+        print("Google Sheet scoreboard and log header updated.")
+    except Exception as e:
+        print("Error updating Google Sheet scoreboard:", e)
 
 def process_frame(frame):
     """
     Processes a video frame: runs OCR to detect text (race numbers),
     updates lap counts if a valid number is found (applying debounce),
-    and draws bounding boxes on the frame.
+    draws bounding boxes, and logs changes to the dashboard + Sheets.
     """
     global lap_counts, last_detection_time
 
-    # For OCR accuracy, convert to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
-    # Run OCR with EasyOCR.
-    # The result is a list of tuples: (bounding_box, text, confidence)
     results = reader.readtext(gray, detail=1)
-    
     current_time = time.time()
+
     for (bbox, text, conf) in results:
-        # Filter out low-confidence detections (adjust threshold as needed)
         if conf < 0.5:
             continue
         
-        # Clean detected text: keep only digits
+        # Keep only digits in the detected text
         text_clean = "".join(filter(str.isdigit, text))
         
         if text_clean in VALID_RACE_NUMBERS:
-            # Apply debounce logic: count a lap only if enough time has passed
+            # Debounce check: only count a lap if enough time has passed
             if current_time - last_detection_time[text_clean] > DEBOUNCE_SECONDS:
                 lap_counts[text_clean] += 1
                 last_detection_time[text_clean] = current_time
                 print(f"Lap count updated for {text_clean}: {lap_counts[text_clean]}")
-                
-                # Send the updated lap counts to the dashboard
+
+                # 1) Send the updated lap counts to the local dashboard
                 send_update_to_dashboard(lap_counts)
+                # 2) Update the scoreboard in Google Sheets
+                update_google_sheet(lap_counts)
+                # 3) Append a log entry for this newly detected lap
+                append_log_entry(text_clean, lap_counts[text_clean])
             
             # Draw bounding box and label around the detected race number
             pts = np.array(bbox, np.int32).reshape((-1, 1, 2))
             cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
-            cv2.putText(frame, text_clean, (int(bbox[0][0]), int(bbox[0][1]-10)), 
+            cv2.putText(frame, text_clean, (int(bbox[0][0]), int(bbox[0][1] - 10)), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
     return frame
 
 def try_camera_index(index):
     """
-    Try to open a camera with the given index and return (success, camera) tuple
+    Try to open a camera with the given index and return (success, camera) tuple.
     """
     cap = cv2.VideoCapture(index)
     if cap.isOpened():
-        # Try to read a frame to confirm it's working
         ret, _ = cap.read()
         if ret:
             print(f"Successfully connected to camera {index}")
@@ -97,14 +168,14 @@ def try_camera_index(index):
     return False, None
 
 def main():
-    # Try to open the camera feed, attempting multiple indices if needed
+    # 1. Load existing scoreboard data so we keep a running total
+    load_existing_data_from_sheet(sheet)
+    
+    # 2. Try to open the camera feed, attempting multiple indices if needed
     cap = None
     success = False
     
-    # First try the default camera index
     success, cap = try_camera_index(CAMERA_INDEX)
-    
-    # If default failed, try a few more indices
     if not success:
         print(f"Could not open camera {CAMERA_INDEX}, trying other indices...")
         for i in range(4):  # Try indices 0-3
@@ -117,25 +188,25 @@ def main():
         print("Error: Could not open any video capture device")
         return
     
-    # Set camera properties
+    # 3. Set camera properties
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
     cap.set(cv2.CAP_PROP_FPS, FPS)
     
-    print(f"Camera configuration:")
-    print(f"Actual width: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
-    print(f"Actual height: {cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
-    print(f"Actual FPS: {cap.get(cv2.CAP_PROP_FPS)}")
+    print("Camera configuration:")
+    print(f"  Actual width:  {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
+    print(f"  Actual height: {cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
+    print(f"  Actual FPS:    {cap.get(cv2.CAP_PROP_FPS)}")
     
     print("Starting video capture. Press 'q' to exit.")
     
+    # 4. Main capture loop
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Failed to grab frame")
             break
         
-        # Process the frame: detect numbers and update lap counts
         processed_frame = process_frame(frame)
         
         # (Optional) Display the processed frame with overlays for debugging

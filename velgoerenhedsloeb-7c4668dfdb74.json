@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "velgoerenhedsloeb",
+  "private_key_id": "7c4668dfdb745232b028c068caa6e6f84cd44d85",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCZgVXr8c1EgszQ\nn5vEj1awlMY/BficlbUqPNX6GJU2oNn+hiGxs833mSEAzjWVFT5liF1L8z+yJwZ/\ncOMIhjrd94dsBASD800Lmc532njmannEEs93D9zpaYu+eCXU5La4V2UjHXmMJ89A\nRtmNqvGct1bK0y/leCTODqiyBTHH0Rvvd8ynWN+cLnrLMD7yrCiqX6CbbOmZ9nzx\nzlZaK/ZypFfL1MhdFYWzHOLvhuYiZns9WqpSr4BQbwtth1RAcylUu1LseTvNjF/C\nH4QDEm3cXlsYUX176E8eUkfRdsJ9QKCDWWhUWhituKUPL/+z0Qh6L277zFmOy8kq\nvGfLEBFJAgMBAAECggEACnGO8bBABaT7f8cYHymcXYOlsDR9C1QxIOhGK4+AGVkc\ns7EW+kLQJMQFh4tAAH5TQi+in0/zmbCHg+SfgZ02RJM6YqosT3jeWUdz0VorBwwf\n8CvScxiAcF3mrMT6V+9ekhCaGCdBdXxg4I/hbb6/VOjxTffLxqojoORE7GWnkx9H\nIpL7YKi9APt+V+BE/wzHR9sNV+QHMHvICe9OiLEIGmU7ZD61a8aLHovGvgCJ/K4g\nWlPJNBgrdTozuD+8d3J1frBsvpEMaH57LFqpbGfHUpqPx0kCmVb8FIrIAfZin6KV\neCuz8pBS71LOTbxD7Oun5W97T8ojLClDCrKiLs33LQKBgQDVH7YWTQG9LAY5/gDo\nJzkw07CtDbg4nCd33oOlFoV9Tuc/HylyTmKqJ9pm/SgP+jXKw35nqZTV3aDsPb1T\nyT1uBUje5Uo3Va5UCtOguuoZqyig2NB3LjkO5E/3oeZoKQ271gdMNmrfLJ2YApUz\n8UEHi22AVbjXC4p6JcIgrtIwDQKBgQC4YyYtZSu7z2UUhwu4YdjGZXwOROzTERK5\ntJvOu5KP2fvkYopezL64STH189GCeeKwXSUTUHKx1Qw4KkPwdwq7JNmAwqf6dhCt\nJfWXWK53ZP2cZqUEKLRShrHqLHg4G7gTf7V1xRGheYqwAWtKPCnJUh8eA9o9hovA\nCydxEe1bLQKBgFKAliKH6PZsRnTIqV01YeRO7oPvXbM8b+LtVpTf5QkfNFGxJIBF\na9hm2RspQQr+VziI+TPz59PqmdMaC2KV8pvWm+D9bf+BwZxzHH2KHfmV0oKBrCGW\n2Su0omhAWktUKSbfsa+FGVYPlWo1BcE30W60QM1/YbCNnSuv1jiEtIU5AoGBAJXt\ngPh+gD4ZWD6FxKDrZuGDWYkcwFirVEeONPa3jGfNvsUo3wxQfW/JjIdJ9vyZ8Rqo\n0mHPE0PIUURGEbIwiZg8UWMiZIYChHLWH8ktgcdxZcpLqDgmhOFpxrb769DrsRSh\nzkHxuPFMq9mLfdsB6pRZYxX72fQXOAEy0KJfCloNAoGAGZcazOU1hn++fDSdyJ0S\nTOEbw1nqG7w5i2kWGB6wbgNatgm0tKPNvfsEiFGzvNMY8Ht/kDgTH80tyUKMiFF4\nQBbSVQ4re5j6N2AvAXZe9xGMBJgp/2rjpw50qlBzMZyY3NbOIVMobybMGCxt47tU\nZKXJzeibHSldFnG9cxMJQuc=\n-----END PRIVATE KEY-----\n",
+  "client_email": "dtu-thunderstriders-38@velgoerenhedsloeb.iam.gserviceaccount.com",
+  "client_id": "110642689398457932664",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dtu-thunderstriders-38%40velgoerenhedsloeb.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
