@@ -1,7 +1,6 @@
 import cv2
 import easyocr
 import time
-import requests
 import numpy as np
 import gspread
 from google.oauth2.service_account import Credentials
@@ -18,10 +17,7 @@ FPS = 15
 DEBOUNCE_SECONDS = 30
 
 # Predefined valid race numbers (update with your actual list)
-VALID_RACE_NUMBERS = {"101", "102", "103", "104", "105", "106", "107", "108", "109", "110"}
-
-# Dashboard endpoint (make sure the dashboard is running on this URL)
-DASHBOARD_UPDATE_URL = "http://localhost:5003/update"
+VALID_RACE_NUMBERS = {str(i) for i in range(101, 301)}
 
 # ----------------- Google Sheets Configuration -----------------
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
@@ -70,16 +66,6 @@ def load_existing_data_from_sheet(sheet):
                 # If the stored value isn't a valid integer, ignore or log
                 pass
 
-def send_update_to_dashboard(lap_counts):
-    """
-    Sends the current lap count data to the dashboard via a POST request.
-    """
-    try:
-        requests.post(DASHBOARD_UPDATE_URL, json=lap_counts)
-        # Optionally, check response.status_code or response.json() for confirmation
-    except Exception as e:
-        print("Error sending update to dashboard:", e)
-
 def append_log_entry(runner_id, lap_count):
     """
     Appends a new log entry at the bottom of the sheet with:
@@ -108,7 +94,8 @@ def update_google_sheet(lap_counts):
         sheet.update(update_range, data)
         # Calculate row for log header: 5 empty rows below main table
         log_header_row = len(data) + 6
-        sheet.update_cell(log_header_row, 1, "Log of all entries")
+        # out-comment the log header line
+        # sheet.update_cell(log_header_row, 1, "Log of all entries")
         print("Google Sheet scoreboard and log header updated.")
     except Exception as e:
         print("Error updating Google Sheet scoreboard:", e)
@@ -139,12 +126,11 @@ def process_frame(frame):
                 last_detection_time[text_clean] = current_time
                 print(f"Lap count updated for {text_clean}: {lap_counts[text_clean]}")
 
-                # 1) Send the updated lap counts to the local dashboard
-                send_update_to_dashboard(lap_counts)
-                # 2) Update the scoreboard in Google Sheets
+                # 1) Update the scoreboard in Google Sheets
                 update_google_sheet(lap_counts)
-                # 3) Append a log entry for this newly detected lap
-                append_log_entry(text_clean, lap_counts[text_clean])
+                # 2) Append a log entry for this newly detected lap
+                # out-comment the log entry update
+                # append_log_entry(text_clean, lap_counts[text_clean])
             
             # Draw bounding box and label around the detected race number
             pts = np.array(bbox, np.int32).reshape((-1, 1, 2))
