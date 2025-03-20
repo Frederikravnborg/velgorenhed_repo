@@ -6,7 +6,26 @@ from streamlit_autorefresh import st_autorefresh
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-st.set_page_config(page_title="Real-Time Lap Counter Dashboard", layout="wide")
+st.set_page_config(page_title="DTU Thunderstriders Knækker Cancer - Lap Counts", layout="wide")
+
+# Hide row indices via custom CSS
+hide_dataframe_row_index = """
+<style>
+/* Hide the index column */
+tbody > tr > th:first-child {
+    display: none;
+}
+thead > tr > th:first-child {
+    display: none;
+}
+/* Hide any blank "spacer" cells */
+.blank {
+    display: none;
+}
+</style>
+"""
+st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
+
 st_autorefresh(interval=4000, limit=0, key="dashboard")
 
 # Initialize session state to track previous lap counts and last update times
@@ -79,22 +98,44 @@ def show_modal(message):
     )
 
 # Check if any runner has a new lap (i.e. updated in the last 5 seconds)
-new_lap_rows = df_sorted[df_sorted.apply(lambda row: (current_time - st.session_state.last_update.get(row['Num'], 0)) < 5, axis=1)]
+new_lap_rows = df_sorted[
+    df_sorted.apply(lambda row: (current_time - st.session_state.last_update.get(row['Num'], 0)) < 5, axis=1)
+]
 if not new_lap_rows.empty:
-    # For example, show a popup for the first runner with a new lap.
     runner = new_lap_rows.iloc[0]
-    show_modal(f"Runner {runner['Num']} just completed a new lap!")
+    show_modal(f"New Lap: {runner['Num']}!")
 
-# (Optional) Define a function to highlight top rows if needed.
+# Optional: highlight the top 3 rows in green
 def highlight_top_rows(row):
-    return ['background-color: lightgreen' if row.name < 3 else '' for _ in row]
+    try:
+        row_index = int(row.name)  # Convert row.name to an integer if possible
+    except ValueError:
+        row_index = 999999         # Fallback to a large number so it won't highlight
+    
+    return [
+        'background-color: lightgreen' if row_index < 3 else '' 
+        for _ in row
+    ]
 
-# Split the sorted DataFrame into parts for a multi-column layout.
+# Split the sorted DataFrame into parts for a multi-column layout
 num_columns = 10
 split_dfs = np.array_split(df_sorted, num_columns)
 
 st.title("Real-Time Lap Counter Dashboard")
 cols = st.columns(num_columns)
+
 for i, col in enumerate(cols):
-    styled_split_df = split_dfs[i].style.apply(highlight_top_rows, axis=1).hide(axis="index")
+    # Copy the DataFrame chunk
+    df_chunk = split_dfs[i].copy()
+    
+    # Make "Num" the index, removing the default 0,1,2,... index
+    df_chunk.set_index("Num", inplace=True)
+    
+    # (Optional) Keep only the columns you actually need displayed
+    df_chunk = df_chunk[["Laps"]]
+
+    # Apply styling if desired
+    styled_split_df = df_chunk.style.apply(highlight_top_rows, axis=1)
+    
+    # Display with the runner's number as the index
     col.dataframe(styled_split_df, use_container_width=True, height=800)
