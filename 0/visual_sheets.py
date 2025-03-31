@@ -33,6 +33,8 @@ if "previous_laps" not in st.session_state:
     st.session_state.previous_laps = {}
 if "last_update" not in st.session_state:
     st.session_state.last_update = {}
+if "new_runners" not in st.session_state:
+    st.session_state.new_runners = []
 
 # Set up Google Sheets API credentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -67,43 +69,12 @@ def check_new_lap(row):
     previous = st.session_state.previous_laps.get(race_number, 0)
     if row['Laps'] > previous:
         st.session_state.last_update[race_number] = current_time
+        # Insert the new event at the front, keeping only the most recent 5 events
+        st.session_state.new_runners = st.session_state.new_runners[1:5] + [race_number]
     st.session_state.previous_laps[race_number] = row['Laps']
     return row
 
 df_sorted = df_sorted.apply(check_new_lap, axis=1)
-
-# Function to show a modal popup in the center of the screen
-def show_modal(message):
-    st.markdown(
-        f"""
-        <style>
-        .modal {{
-            position: fixed;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255,255,255,0.95);
-            padding: 30px;
-            border: 2px solid #000;
-            border-radius: 8px;
-            z-index: 1000;
-            text-align: center;
-        }}
-        </style>
-        <div class="modal">
-            {message}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# Check if any runner has a new lap (i.e. updated in the last 5 seconds)
-new_lap_rows = df_sorted[
-    df_sorted.apply(lambda row: (current_time - st.session_state.last_update.get(row['Num'], 0)) < 5, axis=1)
-]
-if not new_lap_rows.empty:
-    runner = new_lap_rows.iloc[0]
-    show_modal(f"New Lap: {runner['Num']}!")
 
 # Optional: highlight the top 3 rows in green
 def highlight_top_rows(row):
@@ -121,7 +92,9 @@ def highlight_top_rows(row):
 num_columns = 10
 split_dfs = np.array_split(df_sorted, num_columns)
 
-st.title("Real-Time Lap Counter Dashboard")
+total_laps = df_sorted['Laps'].sum()
+latest_runners = st.session_state.new_runners[-5:][::-1]
+st.markdown(f"<h1>Total Laps: {total_laps} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; New: {', '.join(latest_runners)}</h1>", unsafe_allow_html=True)
 cols = st.columns(num_columns)
 
 for i, col in enumerate(cols):
