@@ -7,10 +7,10 @@ import csv
 import os
 
 # ----------------- Configuration -----------------
-CAMERA_INDEX = 0  # Default to built-in webcam
-FRAME_WIDTH = 2048
-FRAME_HEIGHT = 1536
-FPS = 15
+CAMERA_INDEX = 1  # Set to the device index corresponding to your iPhone camera feed via Continuity Camera (e.g. 0 or 1)
+FRAME_WIDTH = 640 #1280 # 2048
+FRAME_HEIGHT = 480 #720 # 1536
+FPS = 5
 
 # Minimum seconds between successive detections of the same runner
 # Set to 30 seconds to prevent duplicate detections during 400m laps
@@ -152,7 +152,7 @@ def try_camera_index(index):
     """
     Try to open a camera with the given index and return (success, camera) tuple.
     """
-    cap = cv2.VideoCapture(index)
+    cap = cv2.VideoCapture(index, cv2.CAP_AVFOUNDATION)
     if cap.isOpened():
         ret, _ = cap.read()
         if ret:
@@ -186,6 +186,7 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
     cap.set(cv2.CAP_PROP_FPS, FPS)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
     
     print("Camera configuration:")
     print(f"  Actual width:  {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}")
