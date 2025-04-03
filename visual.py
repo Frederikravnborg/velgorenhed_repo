@@ -118,24 +118,27 @@ st.markdown(f"<h1>Total Laps: {total_laps} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&
 
 cols = st.columns(num_columns)
 
-# Remove the line: df_chunk.set_index("Num", inplace=True)
-# Instead, keep "Num" as a column and reset the index so row.name is 0..N
-
 for i, col in enumerate(cols):
     df_chunk = split_dfs[i].copy()
     
-    # Keep 'Num' as a separate column; do not set it as the index.
+    # Keep 'Num' as a separate column; do not set it as the index yet
     df_chunk = df_chunk[["Num", "Laps"]]
-    
-    # Reset the index so row.name is 0..N
-    df_chunk.reset_index(drop=True, inplace=True)
+    df_chunk = df_chunk.sort_values('Laps', ascending=False)
+    df_chunk.set_index('Num', inplace=True)
     
     if i == 0:
-        # For the first table, apply the gradient_green style for rows 0..9
-        styled_split_df = df_chunk.style.apply(gradient_green, axis=1)
+        # Define gradient styling for first column's top 10 rows
+        def highlight_first_ten(row):
+            # Get row's position in this chunk's DataFrame
+            position = df_chunk.index.get_loc(row.name)
+            if position < 10:
+                min_alpha = 0.3
+                alpha = 1 - (position / 9) * (1 - min_alpha)
+                return [f'background-color: rgba(0, 255, 0, {alpha})'] * len(row)
+            return [''] * len(row)
+        
+        styled_split_df = df_chunk.style.apply(highlight_first_ten, axis=1)
     else:
-        # For other tables, no gradient (or apply some other styling if you wish)
         styled_split_df = df_chunk.style
     
     col.dataframe(styled_split_df, use_container_width=True, height=800)
-

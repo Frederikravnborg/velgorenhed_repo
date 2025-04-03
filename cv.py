@@ -8,16 +8,27 @@ import os
 
 # ----------------- Configuration -----------------
 CAMERA_INDEX = 1  # Set to the device index corresponding to your iPhone camera feed via Continuity Camera (e.g. 0 or 1)
-FRAME_WIDTH = 640 #1280 # 2048
-FRAME_HEIGHT = 480 #720 # 1536
-FPS = 5
+
+RESOLUTION = '480p'    # '480p', '720p', or '2k'
+
+FPS = 10
 
 # Minimum seconds between successive detections of the same runner
-# Set to 30 seconds to prevent duplicate detections during 400m laps
-DEBOUNCE_SECONDS = 30
+DEBOUNCE_SECONDS = 40
+
+
+if RESOLUTION == '2k':
+    FRAME_WIDTH =  2048
+    FRAME_HEIGHT =  1536
+elif RESOLUTION == '720p':
+    FRAME_WIDTH =  1280
+    FRAME_HEIGHT =  720
+elif RESOLUTION == '480p':
+    FRAME_WIDTH =  640
+    FRAME_HEIGHT =  480
 
 # Predefined valid race numbers (update with your actual list)
-VALID_RACE_NUMBERS = {str(i) for i in range(101, 301)}
+VALID_RACE_NUMBERS = {f"{i:03d}" for i in range(1, 201)}
 
 # CSV file configuration
 CSV_FILE = 'lap_counts.csv'
@@ -27,6 +38,7 @@ lap_counts = {num: 0 for num in VALID_RACE_NUMBERS}
 last_detection_time = {num: 0 for num in VALID_RACE_NUMBERS}
 
 # ----------------- Initialize OCR Reader -----------------
+# reader = easyocr.Reader(['en'], gpu=True)
 reader = easyocr.Reader(['en'], gpu=True)
 
 # ----------------- Functions -----------------
@@ -118,6 +130,7 @@ def process_frame(frame):
     global lap_counts, last_detection_time
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
     results = reader.readtext(gray, detail=1)
     current_time = time.time()
 
