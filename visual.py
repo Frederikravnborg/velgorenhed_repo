@@ -151,7 +151,7 @@ if not df.empty:
 
 
     total_laps = df_sorted['Laps'].sum()
-    st.markdown(f"<h1>Total Laps: {total_laps} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; New: {new_laps_str}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1>Total Laps: {total_laps} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; New: {new_laps_str}</h1>", unsafe_allow_html=True)
 
     # Make sure index is set correctly before splitting
     df_sorted = df_sorted.set_index('Num') # Set 'Num' as the final index before splitting
