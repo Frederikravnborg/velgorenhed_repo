@@ -7,11 +7,15 @@ import csv
 import os
 
 # ----------------- Configuration -----------------
-CAMERA_INDEX = 1  # Set to the device index corresponding to your iPhone camera feed via Continuity Camera (e.g. 0 or 1)
+CAMERA_INDEX = 1  # 0: Mac webcam, 1: iPhone camera
 
 RESOLUTION = '480p'    # '480p', '720p', or '2k'
 
 FPS = 10
+
+num_runners_option = 100 # Choose 100 or 200 runners
+
+visualize_stream = True
 
 # Minimum seconds between successive detections of the same runner
 DEBOUNCE_SECONDS = 40
@@ -27,8 +31,11 @@ elif RESOLUTION == '480p':
     FRAME_WIDTH =  640
     FRAME_HEIGHT =  480
 
-# Predefined valid race numbers (update with your actual list)
-VALID_RACE_NUMBERS = {f"{i:03d}" for i in range(1, 201)}
+# Predefined valid race numbers
+if num_runners_option == 100:
+    VALID_RACE_NUMBERS = {f"{i:03d}" for i in range(1, 101)}
+elif num_runners_option == 200:
+    VALID_RACE_NUMBERS = {f"{i:03d}" for i in range(1, 201)}
 
 # CSV file configuration
 CSV_FILE = 'lap_counts.csv'
@@ -217,8 +224,9 @@ def main():
         
         processed_frame = process_frame(frame)
         
-        # (Optional) Display the processed frame with overlays for debugging
-        cv2.imshow("Race Lap Counter", processed_frame)
+        # Display the processed frame with overlays for debugging
+        if visualize_stream:
+            cv2.imshow("Race Lap Counter", processed_frame)
         
         # Exit when 'q' is pressed.
         if cv2.waitKey(1) & 0xFF == ord('q'):
